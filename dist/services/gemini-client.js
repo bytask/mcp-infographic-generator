@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 export class GeminiClient {
     genAI;
-    imageModel = "gemini-2.0-flash-preview-image-generation";
+    imageModel = "gemini-3-pro-image-preview";
     textModel = "gemini-2.0-flash";
     constructor(apiKey) {
         this.genAI = new GoogleGenerativeAI(apiKey);

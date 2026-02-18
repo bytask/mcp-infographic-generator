@@ -3,7 +3,7 @@ import type { GenerateInfographicInput } from "../utils/validation.js";
 
 export class GeminiClient {
   private genAI: GoogleGenerativeAI;
-  private imageModel: string = "gemini-2.0-flash-preview-image-generation";
+  private imageModel: string = "gemini-3-pro-image-preview";
   private textModel: string = "gemini-2.0-flash";
 
   constructor(apiKey: string) {
