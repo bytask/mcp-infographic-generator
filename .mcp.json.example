@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "infographic-generator": {
+      "command": "npx",
+      "args": ["-y", "--package=github:bytask/mcp-infographic-generator", "mcp-infographic-generator"],
+      "env": {
+        "GEMINI_API_KEY": "your-gemini-api-key-here",
+        "IMAGE_OUTPUT_DIR": "/path/to/output",
+        "DEFAULT_STYLE": "notebooklm",
+        "DEFAULT_LANGUAGE": "ja"
+      }
+    }
+  }
+}
