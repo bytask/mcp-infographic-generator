@@ -1,20 +1,21 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 export class GeminiClient {
-    genAI;
+    genai;
     imageModel = "gemini-3-pro-image-preview";
     textModel = "gemini-2.0-flash";
     constructor(apiKey) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
+        this.genai = new GoogleGenAI({ apiKey });
     }
     /**
      * Enhance prompt using Gemini Flash (text generation)
      */
     async enhancePrompt(basePrompt) {
         try {
-            const model = this.genAI.getGenerativeModel({ model: this.textModel });
-            const result = await model.generateContent(basePrompt);
-            const enhanced = result.response.text();
-            return enhanced || basePrompt;
+            const result = await this.genai.models.generateContent({
+                model: this.textModel,
+                contents: basePrompt,
+            });
+            return result.text ?? basePrompt;
         }
         catch (error) {
             console.error("Prompt enhancement failed, using base prompt:", error);
@@ -25,25 +26,25 @@ export class GeminiClient {
      * Generate infographic image using Gemini image generation
      */
     async generateImage(prompt, input) {
-        const model = this.genAI.getGenerativeModel({
-            model: this.imageModel,
-        });
-        // Embed aspect ratio guidance into the prompt
         const aspectRatio = input.aspectRatio || "16:9";
-        const fullPrompt = `${prompt}\n\nIMPORTANT: Generate this as a ${aspectRatio} aspect ratio image.`;
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-            generationConfig: {
-                responseModalities: ["image", "text"],
+        const config = {
+            responseModalities: ["IMAGE"],
+            imageConfig: {
+                aspectRatio,
             },
+        };
+        const result = await this.genai.models.generateContent({
+            model: this.imageModel,
+            contents: prompt,
+            config,
         });
-        const candidates = result.response.candidates;
+        const candidates = result.candidates;
         if (!candidates || candidates.length === 0) {
             throw new Error("No response candidates returned from Gemini API. " +
                 "Check that your GEMINI_API_KEY has access to image generation.");
         }
         for (const candidate of candidates) {
-            for (const part of candidate.content?.parts || []) {
+            for (const part of candidate.content?.parts ?? []) {
                 if (part.inlineData?.data) {
                     return Buffer.from(part.inlineData.data, "base64");
                 }
@@ -57,8 +58,10 @@ export class GeminiClient {
      */
     async testConnection() {
         try {
-            const model = this.genAI.getGenerativeModel({ model: this.textModel });
-            await model.generateContent("Hello");
+            await this.genai.models.generateContent({
+                model: this.textModel,
+                contents: "Hello",
+            });
             return true;
         }
         catch {

@@ -1,13 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type { GenerateInfographicInput } from "../utils/validation.js";
 
 export class GeminiClient {
-  private genAI: GoogleGenerativeAI;
+  private genai: GoogleGenAI;
   private imageModel: string = "gemini-3-pro-image-preview";
   private textModel: string = "gemini-2.0-flash";
 
   constructor(apiKey: string) {
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.genai = new GoogleGenAI({ apiKey });
   }
 
   /**
@@ -15,10 +15,11 @@ export class GeminiClient {
    */
   async enhancePrompt(basePrompt: string): Promise<string> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: this.textModel });
-      const result = await model.generateContent(basePrompt);
-      const enhanced = result.response.text();
-      return enhanced || basePrompt;
+      const result = await this.genai.models.generateContent({
+        model: this.textModel,
+        contents: basePrompt,
+      });
+      return result.text ?? basePrompt;
     } catch (error) {
       console.error("Prompt enhancement failed, using base prompt:", error);
       return basePrompt;
@@ -32,22 +33,22 @@ export class GeminiClient {
     prompt: string,
     input: GenerateInfographicInput
   ): Promise<Buffer> {
-    const model = this.genAI.getGenerativeModel({
-      model: this.imageModel,
-    });
-
-    // Embed aspect ratio guidance into the prompt
     const aspectRatio = input.aspectRatio || "16:9";
-    const fullPrompt = `${prompt}\n\nIMPORTANT: Generate this as a ${aspectRatio} aspect ratio image.`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-      generationConfig: {
-        responseModalities: ["image", "text"],
-      } as object,
+    const config: Record<string, unknown> = {
+      responseModalities: ["IMAGE"],
+      imageConfig: {
+        aspectRatio,
+      },
+    };
+
+    const result = await this.genai.models.generateContent({
+      model: this.imageModel,
+      contents: prompt,
+      config,
     });
 
-    const candidates = result.response.candidates;
+    const candidates = result.candidates;
     if (!candidates || candidates.length === 0) {
       throw new Error(
         "No response candidates returned from Gemini API. " +
@@ -56,7 +57,7 @@ export class GeminiClient {
     }
 
     for (const candidate of candidates) {
-      for (const part of candidate.content?.parts || []) {
+      for (const part of candidate.content?.parts ?? []) {
         if (part.inlineData?.data) {
           return Buffer.from(part.inlineData.data, "base64");
         }
@@ -74,8 +75,10 @@ export class GeminiClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: this.textModel });
-      await model.generateContent("Hello");
+      await this.genai.models.generateContent({
+        model: this.textModel,
+        contents: "Hello",
+      });
       return true;
     } catch {
       return false;

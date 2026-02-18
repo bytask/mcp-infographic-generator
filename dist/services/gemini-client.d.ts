@@ -1,6 +1,6 @@
 import type { GenerateInfographicInput } from "../utils/validation.js";
 export declare class GeminiClient {
-    private genAI;
+    private genai;
     private imageModel;
     private textModel;
     constructor(apiKey: string);
